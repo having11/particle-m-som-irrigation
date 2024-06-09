@@ -1,5 +1,5 @@
 /* 
- * Project myProject
+ * Project M-SoM Smart Irrigation
  * Author: Evan Rust
  * Date: 
  * For comprehensive documentation and examples, please visit:
@@ -41,12 +41,14 @@ void setup() {
   ledger = Particle.ledger("smartIrrigation");
 
   for (uint8_t i = 0; i < kValveCount; i++) {
+    valves[i] = std::make_unique<Valve>(valvePins[i]);
+    valves[i]->init();
+  }
+
+  for (uint8_t i = 0; i < kSoilSensorCount; i++) {
     soilSensors[i] = std::make_unique<SoilSensor>(soilSensorPins[i],
       kAirMoistureValue, kWaterMoistureValue);
-    valves[i] = std::make_unique<Valve>(valvePins[i]);
-
     soilSensors[i]->init();
-    valves[i]->init();
   }
 
   flowSensor.init();
