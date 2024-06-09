@@ -38,7 +38,7 @@ void FlowSensor::execute() {
   while (true) {
     _dt = millis() - _t0;
 
-    if (_dt >= 1000) {
+    if (_dt >= 500) {
       _t0 = millis();
       _mutex.lock();
       _lastFlowRate = _ticks / _flowrateCoeff;

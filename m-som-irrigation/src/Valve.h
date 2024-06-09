@@ -2,6 +2,8 @@
 
 #include "Particle.h"
 
+#include "FlowSensor.h"
+
 class Valve {
   public:
     Valve(uint8_t pin);
@@ -10,11 +12,12 @@ class Valve {
     void on();
     void off();
     bool active() const;
+    bool checkFlow(FlowSensor& sensor, double threshold);
 
     /**
      * @brief The number of ms the valve has been on
      * 
-     * @remark Will be -1 if state is off
+     * @remark Will be 0 if state is off
      * 
      * @return int32_t 
      */

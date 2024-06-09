@@ -27,10 +27,17 @@ FlowSensor flowSensor{kFlowSensorPin};
 Screen screen{kValveCount};
 std::unique_ptr<SoilSensor> soilSensors[kSoilSensorCount];
 std::unique_ptr<Valve> valves[kValveCount];
-
 Ledger ledger;
 
+static uint32_t lastUpdateMs = 0;
+
+int activateValve(String);
+int shutoffValve(String index);
+
 void setup() {
+  Particle.function("activateValve", activateValve);
+  Particle.function("shutoffValve", shutoffValve);
+
   ledger = Particle.ledger("smartIrrigation");
 
   for (uint8_t i = 0; i < kValveCount; i++) {
@@ -47,26 +54,79 @@ void setup() {
 }
 
 void loop() {
-  // Every minute, update screen's connected status
+  if (millis() - lastUpdateMs >= kLedgerUpdateRateMs) {
+    lastUpdateMs = millis();
 
-  // Every 5 minutes, read the soil moisture sensors
-    // Update the screen
-    // Update Ledger
-  // Every 5 minutes, get the current flowrate
-    // Update Ledger
+    for (auto i = 0; i < kValveCount; i++) {
+      if (valves[i]->activeTime() >= kMaxValveOpenMs) {
+        shutoffValve(String(i));
+      }
+
+      ledger.get()["valves"][i].set("state", valves[i]->active());
+    }
+
+    VariantArray soilSensorData;
+    for (auto i = 0; i < kSoilSensorCount; i++) {
+      Variant soilData;
+      soilData.set("percentage", soilSensors[i]->moisturePercentage());
+      soilData.set("raw", soilSensors[i]->rawValue());
+      soilSensorData.append(soilData);
+    }
+
+    ledger.get()["soilSensors"] = soilSensorData;
+
+    Variant flowData;
+    flowData.set("rate", flowSensor.flowRate());
+    flowData.set("vol", flowSensor.volume());
+    ledger.get()["flow"] = flowData;
+
+    screen.setConnectedStatus(Particle.connected());
+    screen.setFlowSensorStatus(flowSensor.flowRate() >= kMinFlowRate);
+  }
 }
 
 int activateValve(String index) {
   // Parse to int
+  int valveIndex = index.toInt();
+  if (valveIndex < 0 || valveIndex >= kValveCount) {
+    return static_cast<int>(ValveState::OUT_OF_BOUNDS);
+  }
+
+  auto* valve = valves[valveIndex].get();
 
   // Check if valve is already active
-    // If it is, don't do anything
-    // Otherwise:
-      // Check if enough time has elapsed since last activation
-        // If not enough delay, return 2
-      // Activate + update screen
-        // Also activate the first valve if not already going
-        // and ensure it has flow
-      // Store timestamp in Ledger
-      // Return 1
+  if (valve->active()) {
+    return static_cast<int>(ValveState::OK);
+  }
+
+  // Check if water is present and can flow
+  if (valves[0]->checkFlow(flowSensor, kMinFlowRate)) {
+    valve->on();
+    screen.setValve(valveIndex, true);
+    ledger.get()["valves"][valveIndex].set("state", true);
+    ledger.get()["valves"][valveIndex].set("ts", Time.timeStr());
+
+    return static_cast<int>(ValveState::OK);
+  }
+
+  return static_cast<int>(ValveState::FAULT_NO_FLOW);
+}
+
+int shutoffValve(String index) {
+  // Parse to int
+  int valveIndex = index.toInt();
+  if (valveIndex < 0 || valveIndex >= kValveCount) {
+    return static_cast<int>(ValveState::OUT_OF_BOUNDS);
+  }
+
+  auto* valve = valves[valveIndex].get();
+
+  if (valve->active()) {
+    valve->off();
+    screen.setValve(valveIndex, false);
+    ledger.get()["valves"][valveIndex].set("state", false);
+    ledger.get()["valves"][valveIndex].set("ts", Time.timeStr());
+  }
+
+  return static_cast<int>(ValveState::OK);
 }

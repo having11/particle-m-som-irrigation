@@ -24,7 +24,7 @@ bool Valve::active() const {
 }
 
 int32_t Valve::activeTime() const {
-  return active() ? (millis() - _lastActiveTime) : -1;
+  return active() ? (millis() - _lastActiveTime) : 0;
 }
 
 void Valve::setState(bool state) {
@@ -34,4 +34,17 @@ void Valve::setState(bool state) {
   if (_active) {
     _lastActiveTime = millis();
   }
+}
+
+bool Valve::checkFlow(FlowSensor& sensor, double threshold) {
+  if (active()) {
+    return sensor.flowRate() >= threshold;
+  }
+
+  setState(true);
+  delay(2000);
+  double rate = sensor.flowRate();
+  setState(false);
+
+  return rate >= threshold;
 }
