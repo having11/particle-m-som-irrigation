@@ -10,10 +10,16 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@mdi/font": "^7.4.47",
     "nuxt": "^3.11.2",
-    "particle-api-js": "^10.4.3",
+    "pg": "^8.12.0",
     "postman-to-openapi": "^3.0.1",
     "vue": "^3.4.27",
     "vue-router": "^4.3.2"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.6",
+    "vite-plugin-vuetify": "^2.0.3",
+    "vuetify": "^3.6.8"
   }
 }
