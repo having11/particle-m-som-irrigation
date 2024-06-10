@@ -22,12 +22,18 @@ Screen::~Screen() {
 }
 
 void Screen::init() {
-  if (!_display->begin(SSD1306_SWITCHCAPVCC, 0x3D)) { // Address 0x3D for 128x64
+  if (!_display->begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
     Log.error("Error initializing screen!");
+
+    while (1) {
+      delay(500);
+    }
   }
 
   _display->clearDisplay();
-  _thread = new Thread("ScreenFlowSensor", std::bind(&Screen::execute, this), OS_THREAD_PRIORITY_DEFAULT, OS_THREAD_STACK_SIZE_DEFAULT);
+  _display->setTextColor(WHITE);
+  _display->setFont(NULL);
+  _display->display();
 }
 
 void Screen::setValve(uint8_t index, bool state) {
@@ -49,76 +55,62 @@ void Screen::setFlowSensorStatus(bool state) {
 }
 
 void Screen::execute() {
-  while (true) {
-    if (millis() - _lastAnimated >= 250) {
-      _lastAnimated = millis();
+  if (millis() - _lastAnimated >= 250) {
+    _lastAnimated = millis();
 
-      if (_flowSensorStatus) {
-        switch (_flowFanFrame) {
-          case 0:
-          case 5:
-            // show fan 0
-            drawFan(&fan0Bmp);
-            break;
-          case 1:
-          case 4:
-            // show fan 1
-            drawFan(&fan1Bmp);
-            break;
-          case 2:
-          case 3:
-            // show fan 2
-            drawFan(&fan2Bmp);
-            break;
-        }
-
-        _flowFanFrame = (++_flowFanFrame) % 6;
-      } else {
-        _flowFanFrame = 0;
+    if (_flowSensorStatus) {
+      switch (_flowFanFrame) {
+        case 0:
+        case 5:
+          // show fan 0
+          drawFan(&fan0Bmp);
+          break;
+        case 1:
+        case 4:
+          // show fan 1
+          drawFan(&fan1Bmp);
+          break;
+        case 2:
+        case 3:
+          // show fan 2
+          drawFan(&fan2Bmp);
+          break;
       }
+
+      _flowFanFrame = (++_flowFanFrame) % 6;
+    } else {
+      _flowFanFrame = 0;
     }
   }
 }
 
 void Screen::drawFan(const tImage *im) {
-  _mutex.lock();
-  WITH_LOCK(Wire) {
-    _display->drawGrayscaleBitmap(100, 60 - im->height, im->data, im->width, im->height);
-  }
-
-  _mutex.unlock();
+  _display->fillRect(100, 60, im->width, im->height, 0x00);
+  _display->drawBitmap(100, 60 - im->height, im->data, im->width, im->height, 0x1, 0x0);
+  _display->display();
 }
 
 void Screen::drawValve(uint8_t index, const tImage *im) {
   uint8_t x = (im->width + 10) * index;
 
-  _mutex.lock();
-  WITH_LOCK(Wire) {
-    _display->drawGrayscaleBitmap(x, 5, im->data, im->width, im->height);
-  }
-
-  _mutex.unlock();
+  _display->fillRect(x, 5, im->width, im->height, 0x00);
+  _display->drawBitmap(x, 5, im->data, im->width, im->height, 0x1, 0x0);
+  _display->display();
 }
 
 void Screen::drawConnected(const tImage *im) {
-  _mutex.lock();
-  WITH_LOCK(Wire) {
-    _display->drawGrayscaleBitmap(100, 10, im->data, im->width, im->height);
-  }
-
-  _mutex.unlock();
+  _display->fillRect(100, 10, im->width, im->height, 0x00);
+  _display->drawBitmap(100, 10, im->data, im->width, im->height, 0x1, 0x0);
+  _display->display();
 }
 
 void Screen::drawMoisture(uint8_t index, double value) {
-  uint8_t x = 24 * index;
-  uint8_t y = 40 + ((index % 2 == 0) ? 0 : 10);
+  uint8_t x = 24 * index + 40;
+  uint8_t y = 48;
 
-  _mutex.lock();
-  WITH_LOCK(Wire) {
-    _display->setTextSize(1);
-    _display->setCursor(x, y);
-    _display->printf("%.0f\%", value * 100.0);
-  }
-
-  _mutex.unlock();
+  _display->setTextSize(1);
+  _display->setCursor(x, y);
+  _display->fillRect(x, y, 32, 8, 0x00);
+  _display->printf("%.0f%%", value * 100.0);
+  _display->display();
 }

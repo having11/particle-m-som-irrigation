@@ -23,8 +23,9 @@ class FlowSensor {
      */
     double volume();
 
-  private:
     void execute();
+
+  private:
     void flowTick();
 
     uint8_t _pin;

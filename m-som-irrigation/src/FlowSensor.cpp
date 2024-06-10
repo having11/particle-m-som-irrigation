@@ -15,7 +15,6 @@ void FlowSensor::init() {
   pinMode(_pin, INPUT_PULLUP);
   attachInterrupt(_pin, &FlowSensor::flowTick, this, RISING);
   _ticks = 0;
-  _thread = new Thread("FlowSensor", std::bind(&FlowSensor::execute, this), OS_THREAD_PRIORITY_DEFAULT, OS_THREAD_STACK_SIZE_DEFAULT);
 }
 
 double FlowSensor::flowRate() {

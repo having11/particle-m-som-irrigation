@@ -4,7 +4,7 @@
 
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_SSD1306_RK.h>
 
 #include <memory>
 
@@ -22,9 +22,9 @@ class Screen {
     void setMoisture(uint8_t index, double value);
     void setConnectedStatus(bool state);
     void setFlowSensorStatus(bool state);
+    void execute();
 
   private:
-    void execute();
     void drawFan(const tImage* im);
     void drawValve(uint8_t index, const tImage* im);
     void drawConnected(const tImage* im);

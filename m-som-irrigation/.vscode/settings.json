@@ -65,8 +65,10 @@
         "xloctime": "cpp",
         "xstring": "cpp",
         "xtr1common": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "variant": "cpp"
     },
     "particle.firmwareVersion": "5.8.0",
-    "particle.targetPlatform": "msom"
+    "particle.targetPlatform": "msom",
+    "particle.targetDevice": "m_som"
 }

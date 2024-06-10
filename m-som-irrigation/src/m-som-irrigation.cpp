@@ -33,58 +33,64 @@ static uint32_t lastUpdateMs = 0;
 
 int activateValve(String);
 int shutoffValve(String index);
+void update(void);
 
 void setup() {
   Particle.function("activateValve", activateValve);
   Particle.function("shutoffValve", shutoffValve);
 
-  ledger = Particle.ledger("smartIrrigation");
+  ledger = Particle.ledger("smart-irrigation");
+  Variant resetData;
+  Variant flowData;
+  VariantArray sensorArray;
+  VariantArray valveArray;
 
   for (uint8_t i = 0; i < kValveCount; i++) {
     valves[i] = std::make_unique<Valve>(valvePins[i]);
     valves[i]->init();
+    Variant valveData;
+    valveData.set("state", false);
+    valveData.set("ts", Time.timeStr());
+    valveArray.append(valveData);
   }
 
   for (uint8_t i = 0; i < kSoilSensorCount; i++) {
     soilSensors[i] = std::make_unique<SoilSensor>(soilSensorPins[i],
       kAirMoistureValue, kWaterMoistureValue);
     soilSensors[i]->init();
+    Variant sensorData;
+    sensorData.set("percentage", 0.0);
+    sensorData.set("raw", 0.0);
+    sensorArray.append(sensorData);
   }
+
+  flowData.set("rate", 0.0);
+  flowData.set("vol", 0.0);
+
+  resetData.set("valves", valveArray);
+  resetData.set("soilSensors", sensorArray);
+  resetData.set("flow", flowData);
+  ledger.set(resetData);
 
   flowSensor.init();
   screen.init();
+
+  for (auto i = 0; i < kValveCount; i++) {
+    screen.setValve(i, false);
+  }
+
+  update();
 }
 
 void loop() {
   if (millis() - lastUpdateMs >= kLedgerUpdateRateMs) {
     lastUpdateMs = millis();
 
-    for (auto i = 0; i < kValveCount; i++) {
-      if (valves[i]->activeTime() >= kMaxValveOpenMs) {
-        shutoffValve(String(i));
-      }
-
-      ledger.get()["valves"][i].set("state", valves[i]->active());
-    }
-
-    VariantArray soilSensorData;
-    for (auto i = 0; i < kSoilSensorCount; i++) {
-      Variant soilData;
-      soilData.set("percentage", soilSensors[i]->moisturePercentage());
-      soilData.set("raw", soilSensors[i]->rawValue());
-      soilSensorData.append(soilData);
-    }
-
-    ledger.get()["soilSensors"] = soilSensorData;
-
-    Variant flowData;
-    flowData.set("rate", flowSensor.flowRate());
-    flowData.set("vol", flowSensor.volume());
-    ledger.get()["flow"] = flowData;
-
-    screen.setConnectedStatus(Particle.connected());
-    screen.setFlowSensorStatus(flowSensor.flowRate() >= kMinFlowRate);
+    update();
   }
+
+  screen.execute();
+  flowSensor.execute();
 }
 
 int activateValve(String index) {
@@ -105,8 +111,6 @@ int activateValve(String index) {
   if (valves[0]->checkFlow(flowSensor, kMinFlowRate)) {
     valve->on();
     screen.setValve(valveIndex, true);
-    ledger.get()["valves"][valveIndex].set("state", true);
-    ledger.get()["valves"][valveIndex].set("ts", Time.timeStr());
 
     return static_cast<int>(ValveState::OK);
   }
@@ -126,9 +130,46 @@ int shutoffValve(String index) {
   if (valve->active()) {
     valve->off();
     screen.setValve(valveIndex, false);
-    ledger.get()["valves"][valveIndex].set("state", false);
-    ledger.get()["valves"][valveIndex].set("ts", Time.timeStr());
   }
 
   return static_cast<int>(ValveState::OK);
+}
+
+void update() {
+  auto curInstance = ledger.get();
+
+  VariantArray valveArr;
+  for (auto i = 0; i < kValveCount; i++) {
+    Variant valveData;
+    if (valves[i]->activeTime() >= kMaxValveOpenMs) {
+      shutoffValve(String(i));
+      valveData.set("ts", Time.timeStr());
+    }
+
+    valveData.set("state", valves[i]->active());
+    valveArr.append(valveData);
+  }
+
+  VariantArray soilSensorData;
+  for (auto i = 0; i < kSoilSensorCount; i++) {
+    Variant soilData;
+    soilData.set("percentage", soilSensors[i]->moisturePercentage());
+    soilData.set("raw", soilSensors[i]->rawValue());
+    soilSensorData.append(soilData);
+    screen.setMoisture(i, soilSensors[i]->moisturePercentage());
+  }
+
+  ledger.get()["soilSensors"] = soilSensorData;
+
+  Variant flowData;
+  flowData.set("rate", flowSensor.flowRate());
+  flowData.set("vol", flowSensor.volume());
+
+  curInstance.set("valves", valveArr);
+  curInstance.set("soilSensors", soilSensorData);
+  curInstance.set("flow", flowData);
+  ledger.set(curInstance, particle::Ledger::SetMode::REPLACE);
+
+  screen.setConnectedStatus(Particle.connected());
+  screen.setFlowSensorStatus(flowSensor.flowRate() >= kMinFlowRate);
 }
