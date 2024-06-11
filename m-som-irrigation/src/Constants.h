@@ -9,17 +9,17 @@ constexpr uint8_t kValve2Pin = D4;
 constexpr uint8_t kValve3Pin = D5;
 const uint8_t valvePins[kValveCount] = {kValve0Pin, kValve1Pin, kValve2Pin, kValve3Pin};
 
-constexpr uint8_t kFlowSensorPin = D6;
+constexpr uint8_t kFlowSensorPin = A2;
 
 constexpr uint8_t kSoilSensorCount = 2;
 constexpr uint8_t kSoilSensor0Pin = A0;
 constexpr uint8_t kSoilSensor1Pin = A1;
 const uint8_t soilSensorPins[kSoilSensorCount] = {kSoilSensor0Pin, kSoilSensor1Pin};
 
-constexpr uint16_t kAirMoistureValue = 1000;
-constexpr uint16_t kWaterMoistureValue = 3000;
+constexpr uint16_t kAirMoistureValue = 3500;
+constexpr uint16_t kWaterMoistureValue = 1000;
 
-constexpr double kMinFlowRate = 1;
+constexpr double kMinFlowRate = 0;
 
 // 5 minutes
 constexpr uint32_t kMaxValveOpenMs = 60 * 5 * 1000;

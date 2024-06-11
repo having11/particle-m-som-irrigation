@@ -50,7 +50,6 @@ void setup() {
     valves[i]->init();
     Variant valveData;
     valveData.set("state", false);
-    valveData.set("ts", Time.timeStr());
     valveArray.append(valveData);
   }
 
@@ -94,11 +93,14 @@ void loop() {
 }
 
 int activateValve(String index) {
+  Log.info("-1");
   // Parse to int
   int valveIndex = index.toInt();
   if (valveIndex < 0 || valveIndex >= kValveCount) {
     return static_cast<int>(ValveState::OUT_OF_BOUNDS);
   }
+
+  Log.info("0");
 
   auto* valve = valves[valveIndex].get();
 
@@ -107,14 +109,22 @@ int activateValve(String index) {
     return static_cast<int>(ValveState::OK);
   }
 
+  Log.info("1");
+
   // Check if water is present and can flow
-  if (valves[0]->checkFlow(flowSensor, kMinFlowRate)) {
-    valve->on();
-    screen.setValve(valveIndex, true);
+  // if (!valves[0]->checkFlow(flowSensor, kMinFlowRate)) {
+  //   valve->on();
+  //   screen.setValve(valveIndex, true);
 
-    return static_cast<int>(ValveState::OK);
-  }
+  //   Log.info("2");
 
+  //   return static_cast<int>(ValveState::OK);
+  // }
+
+  valve->on();
+  screen.setValve(valveIndex, true);
+
+  Log.info("3");
   return static_cast<int>(ValveState::FAULT_NO_FLOW);
 }
 
@@ -136,14 +146,14 @@ int shutoffValve(String index) {
 }
 
 void update() {
-  auto curInstance = ledger.get();
+  Log.info("UPDATE %lu", millis());
+  Variant data;
 
   VariantArray valveArr;
   for (auto i = 0; i < kValveCount; i++) {
     Variant valveData;
     if (valves[i]->activeTime() >= kMaxValveOpenMs) {
       shutoffValve(String(i));
-      valveData.set("ts", Time.timeStr());
     }
 
     valveData.set("state", valves[i]->active());
@@ -159,16 +169,14 @@ void update() {
     screen.setMoisture(i, soilSensors[i]->moisturePercentage());
   }
 
-  ledger.get()["soilSensors"] = soilSensorData;
-
   Variant flowData;
   flowData.set("rate", flowSensor.flowRate());
   flowData.set("vol", flowSensor.volume());
 
-  curInstance.set("valves", valveArr);
-  curInstance.set("soilSensors", soilSensorData);
-  curInstance.set("flow", flowData);
-  ledger.set(curInstance, particle::Ledger::SetMode::REPLACE);
+  data.set("valves", valveArr);
+  data.set("soilSensors", soilSensorData);
+  data.set("flow", flowData);
+  ledger.set(data, particle::Ledger::SetMode::REPLACE);
 
   screen.setConnectedStatus(Particle.connected());
   screen.setFlowSensorStatus(flowSensor.flowRate() >= kMinFlowRate);

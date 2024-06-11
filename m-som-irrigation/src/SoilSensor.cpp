@@ -9,7 +9,7 @@ void SoilSensor::init() {
 }
 
 double SoilSensor::moisturePercentage() {
-  double percentage = map(rawValue(), _airCalib, _waterCalib, 0, 100);
+  double percentage = map(rawValue(), _waterCalib, _airCalib, 0, 100);
 
   return std::clamp<double>(percentage, 0, 100);
 }

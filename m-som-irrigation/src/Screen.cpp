@@ -55,7 +55,8 @@ void Screen::setFlowSensorStatus(bool state) {
 }
 
 void Screen::execute() {
-  if (millis() - _lastAnimated >= 250) {
+  if (millis() - _lastAnimated >= 1000) {
+    Log.info("screen");
     _lastAnimated = millis();
 
     if (_flowSensorStatus) {
@@ -111,6 +112,6 @@ void Screen::drawMoisture(uint8_t index, double value) {
   _display->setTextSize(1);
   _display->setCursor(x, y);
   _display->fillRect(x, y, 32, 8, 0x00);
-  _display->printf("%.0f%%", value * 100.0);
+  _display->printf("%.0f%%", value);
   _display->display();
 }
