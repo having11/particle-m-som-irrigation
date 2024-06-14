@@ -124,6 +124,8 @@ int activateValve(String index) {
   valve->on();
   screen.setValve(valveIndex, true);
 
+  return static_cast<int>(ValveState::OK);
+
   Log.info("3");
   return static_cast<int>(ValveState::FAULT_NO_FLOW);
 }

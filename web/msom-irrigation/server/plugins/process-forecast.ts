@@ -1,4 +1,5 @@
 import { NWSForecastOfficeId, gridpointForecast } from "~/integrations/weather";
+import { getLatestSoilValues } from "../utils/db";
 
 export default defineNitroPlugin(nitroApp => {
   setInterval(async () => {
@@ -13,7 +14,8 @@ export default defineNitroPlugin(nitroApp => {
     }
 
     const nextPrecip = forecast[0].probabilityOfPrecipitation?.value;
-    // TODO: Read latest soil % from db
+    // Read latest soil % from db
+    const values = await getLatestSoilValues();
 
     // TODO: Call watering algo
   }, 5 * 60 * 1000);
