@@ -26,22 +26,21 @@ export async function saveSoilValues(values: {index: number, value: number}[]): 
       [value.index]);
 
     await postgresClient.query(`INSERT INTO soil_history(value, soil_sensor_id)
-      VALUES ($1, $2)`, [soilResult.rows[0].id, value.value]);
+      VALUES ($1, $2)`, [value.value, soilResult.rows[0].id]);
   }
 }
 
 export async function getLatestValveStates(): Promise<Valve[]> {
   const result = await postgresClient.query<Valve>(`
-    SELECT DISTINCT(t1.valve_id) AS id, t4.index, t4.name, t1.active AS state, t1.timestamp, t3.value AS soil_value
+    SELECT DISTINCT ON (t1.valve_id) t1.valve_id AS id, t4.index, t4.name, t1.active AS state, t1.timestamp, t3.value AS soil_value
       FROM public.valve_history t1
-    INNER JOIN soil_sensor t2
+    LEFT JOIN soil_sensor t2
       ON t1.valve_id = t2.valve_id
-    INNER JOIN soil_history t3
+    LEFT JOIN soil_history t3
       ON t2.id = t3.soil_sensor_id
     INNER JOIN valve t4
       ON t1.valve_id = t4.id
-    ORDER BY t1.timestamp
-      DESC LIMIT 20
+    ORDER BY t1.valve_id, t1.timestamp DESC
     `);
 
   return result.rows;
@@ -49,12 +48,12 @@ export async function getLatestValveStates(): Promise<Valve[]> {
 
 export async function getLatestSoilValues(): Promise<{index: number, value: number}[]> {
   const result = await postgresClient.query<{index: number, value: number}>(`
-    SELECT DISTINCT(t2.index), value, timestamp
+    SELECT DISTINCT ON (t2.index) t2.index, value, timestamp
       FROM soil_history t1
     INNER JOIN soil_sensor t2
       ON t1.soil_sensor_id = t2.id
-    ORDER BY timestamp
-      DESC LIMIT 20`);
+    ORDER BY t2.index, timestamp DESC
+    `);
     
   return result.rows;
 }
